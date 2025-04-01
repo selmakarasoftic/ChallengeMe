@@ -1,4 +1,4 @@
-package com.example.tuestayoslab
+package com.example.challengeme
 
 import android.graphics.Outline
 import android.util.Log
@@ -53,7 +53,7 @@ fun RegisterActivity(){
         verticalArrangement = Arrangement.Center
     ){
         Text(text="International Burch University", fontSize = 25.sp);
-        Image (painter= painterResource(R.drawable.ibu_logo_reb_02_01),"")
+        Image (painter= painterResource(R.drawable.ibulogo),"")
         Spacer(modifier = Modifier.height(20.dp))
         OutlinedTextField(
             value = name,

@@ -1,4 +1,4 @@
-package com.example.tuestayoslab
+package com.example.challengeme
 
 import android.util.Log
 import androidx.annotation.DrawableRes
@@ -42,7 +42,7 @@ fun loginActivity(){
         Text(text="International Burch University")
         Spacer(modifier = Modifier.height(20.dp))
 
-        Image(painter = painterResource(R.drawable.ibu_logo_reb_02_01),"IBU logo");
+        Image(painter = painterResource(R.drawable.ibulogo),"IBU logo");
         Spacer(modifier = Modifier.height(20.dp))
         OutlinedTextField(value="email", onValueChange = {email=it},label={ Text(text = "Unesite email adresu") })
         Spacer(modifier = Modifier.height(20.dp))

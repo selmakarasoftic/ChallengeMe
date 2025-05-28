@@ -1,6 +1,5 @@
 package com.example.challengeme
 
-import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -17,17 +16,27 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-@Composable
-fun RegisterScreen(viewModel: AuthViewModel = viewModel()) {
-    val email by viewModel.email.collectAsState()
-    val password by viewModel.password.collectAsState()
-    val confirmPassword by viewModel.confirmPassword.collectAsState()
+import androidx.navigation.NavController
+import com.example.challengeme.data.ChallengeMeDatabase
+import com.example.challengeme.data.UserEntity
+import com.example.challengeme.repository.UserRepository
+import com.example.challengeme.viewmodel.UserViewModel
+import com.example.challengeme.viewmodel.UserViewModelFactory
 
-    val focusManager = LocalFocusManager.current
+@Composable
+fun RegisterScreen(navController: NavController) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+
+    val db = remember { ChallengeMeDatabase.getDatabase(context) }
+    val repo = remember { UserRepository(db.userDao()) }
+    val viewModel: UserViewModel = viewModel(factory = UserViewModelFactory(repo))
+
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -44,59 +53,64 @@ fun RegisterScreen(viewModel: AuthViewModel = viewModel()) {
 
         OutlinedTextField(
             value = email,
-            onValueChange = { viewModel.onEmailChange(it) },
+            onValueChange = { email = it },
             label = { Text("Enter your email address") },
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            )
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
         )
 
         Spacer(modifier = Modifier.height(15.dp))
 
         OutlinedTextField(
             value = password,
-            onValueChange = { viewModel.onPasswordChange(it) },
+            onValueChange = { password = it },
             label = { Text("Enter your password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            )
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+            keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) })
         )
 
         Spacer(modifier = Modifier.height(15.dp))
 
         OutlinedTextField(
             value = confirmPassword,
-            onValueChange = { viewModel.onConfirmPasswordChange(it) },
+            onValueChange = { confirmPassword = it },
             label = { Text("Repeat the password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
-            )
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
             onClick = {
-                if (viewModel.isRegistrationValid()) {
-                    Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
-                    // here you could later save user info
+                if (email.isNotBlank() && password == confirmPassword && password.length >= 6) {
+                    val user = UserEntity(
+                        firstName = "Ime", // placeholder for now
+                        lastName = "Prezime",
+                        username = email.substringBefore("@"), // generate username
+                        email = email,
+                        password = password,
+                        gender = null,
+                        dateOfBirth = null,
+                        address = null,
+                        streak_days = 0,
+                        achievementId = 1
+                    )
+                    viewModel.register(
+                        user,
+                        onSuccess = {
+                            Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
+                            navController.navigate("login") { popUpTo("register") { inclusive = true } }
+                        },
+                        onError = { msg ->
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        }
+                    )
                 } else {
                     Toast.makeText(context, "Please fill all fields correctly!", Toast.LENGTH_SHORT).show()
                 }
@@ -109,19 +123,9 @@ fun RegisterScreen(viewModel: AuthViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(15.dp))
 
         TextButton(onClick = {
-            val intent = Intent(
-                context,
-                MainActivity()::class.java
-            )
-            context.startActivity(intent)
+            navController.navigate("login")
         }) {
             Text("Already have an account? Log In!")
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RegisterScreenPreview() {
-    RegisterScreen()
 }

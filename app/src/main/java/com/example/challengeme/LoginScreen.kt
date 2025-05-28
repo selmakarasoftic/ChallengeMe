@@ -1,6 +1,5 @@
 package com.example.challengeme
 
-import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -17,17 +16,27 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.challengeme.data.ChallengeMeDatabase
+import com.example.challengeme.repository.UserRepository
+import com.example.challengeme.viewmodel.UserViewModel
+import com.example.challengeme.viewmodel.UserViewModelFactory
 
 @Composable
-fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
-    val email by viewModel.email.collectAsState()
-    val password by viewModel.password.collectAsState()
+fun LoginScreen(
+    navController: NavController
+) {
+    val context = LocalContext.current
+    val db = remember { ChallengeMeDatabase.getDatabase(context) }
+    val repo = remember { UserRepository(db.userDao()) }
+    val viewModel: UserViewModel = viewModel(factory = UserViewModelFactory(repo))
+
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
     val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -44,7 +53,7 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
 
         OutlinedTextField(
             value = email,
-            onValueChange = { viewModel.onEmailChange(it) },
+            onValueChange = { email = it },
             label = { Text("Enter email address") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
@@ -60,7 +69,7 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
 
         OutlinedTextField(
             value = password,
-            onValueChange = { viewModel.onPasswordChange(it) },
+            onValueChange = { password = it },
             label = { Text("Enter password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
@@ -77,11 +86,13 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
 
         Button(
             onClick = {
-                if (viewModel.isLoginValid()) {
-                    Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
-                    // here you could later navigate to home screen
-                } else {
-                    Toast.makeText(context, "Please fill all fields!", Toast.LENGTH_SHORT).show()
+                viewModel.login(email, password) { user ->
+                    if (user != null) {
+                        Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
+                        // navController.navigate("home")
+                    } else {
+                        Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show()
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -98,16 +109,9 @@ fun LoginScreen(viewModel: AuthViewModel = viewModel()) {
         }
 
         TextButton(onClick = {
-            val intent = Intent(context, RegisterActivity::class.java)
-            context.startActivity(intent)
+            navController.navigate("register")
         }) {
             Text("Don't have an account? Register now!")
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginScreen()
 }
